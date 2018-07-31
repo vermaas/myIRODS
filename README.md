@@ -8,3 +8,7 @@ Vagrant can enlarge this, to 100 GB in this case, but it needs plugin installed 
 ``> vagrant plugin install vagrant-disksize``
 
 ``> vagrant up``
+
+<p align="center">
+  <img src="https://github.com/vermaas/myIRODS/blob/master/repository/my_data/WSRTA180223003_B000.MS/WSRTA180223003_B000_IMAGE.jpg"/>
+</p>
