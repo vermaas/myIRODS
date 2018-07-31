@@ -1,0 +1,59 @@
+---
+
+##################################
+# iRODS role common attributes.
+##################################
+
+# installation settings
+IRODS_ICOMMANDS_DEB: irods-icommands
+
+# configuring the host to connect to
+IRODS_HOST: irods.astron.nl
+# shared with irods-icat-anabled-server
+IRODS_PORT: 1247
+IRODS_ZONE: tempZone
+# the following are only needed/used if 'IRODS_CLIENT_CONFIGURE_SELF_SIGNED_SSL' == true
+IRODS_SSL_SRC_PATH: deploy/irods/ssl
+IRODS_SSL_CHAIN: chain.pem 
+IRODS_SSL_VERIFY_SETTING: "hostname"
+
+##################################
+# iRODS client role own attributes.
+##################################
+
+# configure a client account
+IRODS_CLIENT_ACCOUNT_CONFIGURATION: true # install irods configuration for an account?
+IRODS_CLIENT_CONFIGURE_SELF_SIGNED_SSL: false # does server use a self-signed certificate (also need 'IRODS_SSL_CHAIN' file in that case)
+IRODS_CLIENT_AUTHENTICATION_SCHEME: pam
+
+# NB it is assumed that the iRODS client user account exists (has to be created
+# by the rods admin user (currently a user is created within the init script).
+IRODS_CLIENT_USER: irodsuser
+
+IRODS_CLIENT_UNIX_USER: vagrant
+IRODS_CLIENT_UNIX_GROUP: vagrant
+
+IRODS_CLIENT_INSTALL_BASE_PATH: "/home/vagrant"
+IRODS_CLIENT_INSTALL_PATH: "{{ IRODS_CLIENT_INSTALL_BASE_PATH }}/alta-client"
+IRODS_CLIENT_INSTALL_ENV_NAME: ".env"
+IRODS_CLIENT_INSTALL_ENV_PATH: "{{ IRODS_CLIENT_INSTALL_PATH }}/{{ IRODS_CLIENT_INSTALL_ENV_NAME }}"
+
+# iRODS Client.
+IRODS_CLIENT_ARTIFACT: "ALTA_core_utils_lib"
+# iRODS Ingest.
+IRODS_CLIENT_INGEST_ARTIFACT: "ALTA_ingest_lib"
+# Client code (should be moved to another role)
+CLIENT_GENERATE_SIP_ARTIFACT: "ALTA_generate_sip_lib"
+
+IRODS_RULES_LOCATION: "{{ IRODS_CLIENT_INSTALL_PATH }}/alta-irods-rules"
+
+IRODS_CLIENT_NEXUS_PACKAGES:
+  - name: "ALTA_iRODS_rules"
+    filetype: "ztar"
+    destination: "{{ IRODS_RULES_LOCATION }}"
+  - name: "{{ IRODS_CLIENT_ARTIFACT }}"
+    filetype: "tar.gz"
+  - name: "{{ IRODS_CLIENT_INGEST_ARTIFACT }}"
+    filetype: "tar.gz"
+  - name: "{{ CLIENT_GENERATE_SIP_ARTIFACT }}"
+    filetype: "tar.gz"

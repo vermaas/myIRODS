@@ -1,0 +1,30 @@
+---
+  - name: Get user home directory
+    shell: echo $HOME
+    register: IRODS_CLIENT_UNIX_USER_HOME
+    become_user: "{{ IRODS_CLIENT_UNIX_USER }}"
+    changed_when: IRODS_CLIENT_UNIX_USER_HOME.rc != 0
+
+  - name: ensure .irods dir exists
+    file:
+      path: "{{ IRODS_CLIENT_UNIX_USER_HOME.stdout }}/.irods"
+      state: directory 
+      owner: "{{ IRODS_CLIENT_UNIX_USER }}"
+      group: "{{ IRODS_CLIENT_UNIX_GROUP }}"
+
+# For self signed certificate    
+  - name: copy self-signed certificate chain file
+    copy:
+      src: "{{ IRODS_SSL_SRC_PATH}}/{{ IRODS_SSL_CHAIN }}"
+      dest: "{{ IRODS_CLIENT_UNIX_USER_HOME.stdout }}/.irods"
+      owner: "{{ IRODS_CLIENT_UNIX_USER }}"
+      group: "{{ IRODS_CLIENT_UNIX_GROUP }}"
+    register: IRODS_SSL_CLIENT_CHAIN_TASK
+    when: IRODS_CLIENT_CONFIGURE_SELF_SIGNED_SSL
+
+  - name: create irods client environment
+    template:
+      src: irods_environment.json.j2
+      dest: "{{ IRODS_CLIENT_UNIX_USER_HOME.stdout }}/.irods/irods_environment.json"
+      owner: "{{ IRODS_CLIENT_UNIX_USER }}"
+      group: "{{ IRODS_CLIENT_UNIX_GROUP }}"

@@ -1,0 +1,35 @@
+---
+  - name: resource server package names changed for apt repository
+    set_fact:
+      INSTALL_IRODS_DEB: "{{ IRODS_DEB }}"
+    
+  - set_fact:
+      INSTALL_IRODS_DEB: 'irods-server'
+    when: IRODS_DEB == "irods-icat" or IRODS_DEB == "irods-resource"
+
+  - name: Install iRODS package (Debian).
+    become: true
+    apt:
+      name:
+      - "{{ INSTALL_IRODS_DEB }}={{ IRODS_VERSION }}"
+    when: ansible_pkg_mgr == "apt"
+
+  - name: Install iRODS package (RedHat).
+    become: true
+    yum:
+      name:
+      - "{{ INSTALL_IRODS_DEB }}-{{ IRODS_VERSION }}"
+    when: ansible_pkg_mgr == "yum" and not ('"*" in INSTALL_IRODS_DEB')
+
+  - name: Ensure all the external libs are listed within facts (RedHat).
+    become: true
+    yum: list="{{ INSTALL_IRODS_DEB }}"
+    register: IRODS_PACKAGE_LIST
+    when: ansible_pkg_mgr == "yum" and ('"*" in INSTALL_IRODS_DEB')
+
+  - name: Install list of external dependencies (RedHat).
+    become: true
+    yum: name={{ item.name }}
+    with_items:
+      - "{{ IRODS_PACKAGE_LIST.results }}"
+    when: ansible_pkg_mgr == "yum" and ('"*" in INSTALL_IRODS_DEB')

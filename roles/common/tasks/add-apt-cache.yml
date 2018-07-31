@@ -1,0 +1,58 @@
+---
+
+  - name: See whether we can connect to apt-cache server.
+    wait_for:
+      host: "{{ COMMON_APT_CACHE_URL }}"
+      port: 3142
+      timeout: 2
+    register: result
+    ignore_errors: true
+
+  - set_fact:
+      COMMON_USE_APT_CACHE: "{{ result|succeeded }}"
+
+  - name: Add the apt cache url to the proxies.
+    lineinfile:
+      path: /etc/apt/apt.conf.d/01proxy
+      line: 'Acquire::http { Proxy "http://{{ COMMON_APT_CACHE_URL }}:3142"; };'
+      state: present
+      create: yes
+      mode: 0644
+    when: COMMON_USE_APT_CACHE == true
+
+  - name: Determine if the proxy file exists.
+    stat:
+      path: /etc/apt/apt.conf.d/01proxy
+    register: proxy_file
+    when: COMMON_USE_APT_CACHE == False
+
+  - name: Remove the apt cache url from the proxies if it exists.
+    lineinfile:
+      state: absent
+      path: /etc/apt/apt.conf.d/01proxy
+      line: 'Acquire::http { Proxy "http://{{ COMMON_APT_CACHE_URL }}:3142"; };'
+    when: COMMON_USE_APT_CACHE == False and proxy_file.stat.exists == True
+
+  - name: Set the fact whether to use apt-cache protocol or not.
+    set_fact:
+      COMMON_APT_HTTPS_PROTOCOL: "{{ (COMMON_USE_APT_CACHE == true) | ternary('http://HTTPS///','https://') }}"
+
+  - name: Set the fact for apt-cache protocol to remove.
+    set_fact:
+      COMMON_APT_REMOVE_HTTPS_PROTOCOL: "{{ (COMMON_USE_APT_CACHE == false) | ternary('http://HTTPS///','https://') }}"
+
+  - name: find .list files
+    find:
+      paths: "/etc/apt"
+      patterns: "*.list"
+      recurse: yes
+      file_type: "file"
+    register: apt_list
+
+  - name: replace protocol if necessary
+    replace:
+      regexp: "{{ COMMON_APT_REMOVE_HTTPS_PROTOCOL }}"
+      replace: "{{ COMMON_APT_HTTPS_PROTOCOL }}"
+      path: "{{ item.path }}"
+    with_items: "{{ apt_list.files }}"
+    

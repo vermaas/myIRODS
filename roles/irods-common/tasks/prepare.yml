@@ -1,0 +1,45 @@
+---
+  - debug: msg="Installing iRODS package {{ IRODS_DEB }} version {{ IRODS_VERSION }}"
+  
+  - name: Register the iRODS package available variable.
+    set_fact:
+      IRODS_PACKAGE_AVAILABLE: 'true'
+    when: IRODS_VERSION | version_compare('4.2', '>=')
+    
+  - name: Add iRODS repo key (Debian).
+    become: true
+    apt_key: url=https://packages.irods.org/irods-signing-key.asc state=present
+    when: (IRODS_PACKAGE_AVAILABLE is defined) and (ansible_pkg_mgr == "apt")
+
+  - name: Add iRODS repo (Debian).
+    become: true
+    apt_repository:
+      filename: packages_irods_org_apt
+      repo: 'deb [arch=amd64] {{ COMMON_APT_HTTPS_PROTOCOL }}packages.irods.org/apt {{ IRODS_PKG_RELEASE_WITH_TIME_STAMP }} main'
+      state: present
+      update_cache: yes
+    when: (IRODS_PACKAGE_AVAILABLE is defined) and (ansible_pkg_mgr == "apt")
+
+  - name: Add iRODS repo (Redhat).
+    become: true
+    yum_repository:
+      name: 'renci-irods'
+      description: 'iRODS Repository'
+      baseurl: 'https://packages.irods.org/yum/pool/centos$releasever/$basearch'
+      gpgkey: https://packages.irods.org/irods-signing-key.asc
+      gpgcheck: yes
+    when: (IRODS_PACKAGE_AVAILABLE is defined) and (ansible_pkg_mgr == "yum")
+
+  - name: Install required packages.
+    package:
+      name:
+      # python pexpect package is required on target host to run ansible "expect" module
+      # ubuntu currently packages version 3.1 and the "expect" module requires >= 3.3
+      # As alternative, install pip and get latest from pip repository
+#      - python-pexpect
+      - python-pip
+    become: true
+    
+  - name: install required python packages
+    become: true
+    pip: name=pexpect state=latest

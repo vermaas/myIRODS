@@ -1,0 +1,45 @@
+---
+
+  - include: variables.yml
+    static: no
+
+  # Ubuntu 14 apt does not contain python3.5, so add from another repo.
+  - name: Add repository for Python 3.5 on Ubuntu.
+    become: true
+    when: ansible_pkg_mgr == "apt"
+    apt_repository: repo='ppa:deadsnakes/ppa'
+                    update_cache=true
+                    state=present
+    tags: packages
+
+  - name: Add Inline with Upstream Stable Repository of Centos for Python 3.5.
+    become: true
+    when: ansible_pkg_mgr == "yum"
+    yum: name='https://centos7.iuscommunity.org/ius-release.rpm'
+         state=present
+
+  - name: Install Python 3.5 and related packages.
+    become: true
+    package: name={{ item }} state=present
+    with_items:
+      - "{{ PYTHON3_PACKAGES }}"
+    tags: packages
+
+  - name: Download get-pip.py to install pip for python.
+    get_url:
+      url: https://bootstrap.pypa.io/get-pip.py
+      dest: "{{ ansible_env.HOME }}"
+    when: ansible_os_family == 'Debian'
+
+  - name: Install pip for Python 3.x.
+    become: true
+    command: python3.5 get-pip.py
+    args:
+      creates: /usr/local/bin/pip3.5
+      chdir: "{{ ansible_env.HOME }}"
+    when: ansible_os_family == 'Debian'
+
+  - name: Upgrade pip.
+    become: true
+    pip: name=pip state=latest executable="{{ PYTHON3_PIP_EXE }}"
+    tags: packages

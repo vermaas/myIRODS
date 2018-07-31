@@ -1,0 +1,6 @@
+---
+
+__PYTHON3_PACKAGES:
+  - python3.5
+  - python3.5-dev
+__PYTHON3_PIP_EXE: pip3.5

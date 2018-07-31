@@ -1,0 +1,14 @@
+---
+# iRODS dev settings
+
+# installation settings
+IRODS_ICAT_DEB: irods-icat
+IRODS_DEV_DEB: '{{ (ansible_pkg_mgr == "apt") | ternary("irods-dev", "irods-devel") }}'
+IRODS_EXTERNAL_DEB: 'irods-externals-*'
+
+# Create optional mount locations, for testing purposes.
+IRODS_DEV_FILE_MOUNTS:
+#  - file_path: "/tmp/Vault1"             # Path to the file to be mounted as loop-back filesystem.
+#    file_size_in_mb: 10                  # The size of the file to be mounted.
+#    mount_path: "/mnt/myVaultDiMount1"   # The mount path.
+#    vault_name: "Vault"                  # The name of the iRODS Resource Vault directory (to be created in mount location).

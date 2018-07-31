@@ -1,0 +1,38 @@
+---
+
+  - name: Create the file.
+    command: dd if=/dev/zero of="{{ item.file_path }}" bs=1M count="{{ item.file_size_in_mb }}"
+    args:
+      creates: "{{ item.file_path }}"
+    with_items: "{{ IRODS_DEV_FILE_MOUNTS }}"
+
+  - name: Create the filesystem on the file.
+    filesystem:
+      fstype: ext4
+      dev: "{{ item.file_path }}"
+    with_items: "{{ IRODS_DEV_FILE_MOUNTS }}"
+
+  - name: Create a mount location.
+    become: yes
+    file:
+      path: "{{ item.mount_path }}"
+      state: directory
+    with_items: "{{ IRODS_DEV_FILE_MOUNTS }}"
+
+  - name: Mount the file as loop back.
+    become: yes
+    mount:
+      src: "{{ item.file_path }}"
+      path: "{{ item.mount_path }}"
+      fstype: ext4
+      opts: loop
+      state: mounted
+    with_items: "{{ IRODS_DEV_FILE_MOUNTS }}"
+
+  - name: Create Vault directory.
+    become: yes
+    file:
+      path: "{{ item.mount_path}}/{{ item.vault_name }}"
+      state: directory
+      mode: 0777
+    with_items: "{{ IRODS_DEV_FILE_MOUNTS }}"

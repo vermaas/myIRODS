@@ -1,0 +1,36 @@
+version: 1
+
+dn: dc=astron,dc=nl
+objectClass: domain
+dc: astron
+
+dn: ou=groups,dc=astron,dc=nl
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=users,dc=astron,dc=nl
+objectClass: top
+objectClass: organizationalUnit
+ou: users
+
+dn: cn=users,ou=groups,dc=astron,dc=nl
+objectClass: top
+objectClass: posixGroup
+cn: users
+gidNumber: 500
+
+dn: cn=vagrant,ou=users,dc=astron,dc=nl
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: top
+objectClass: posixAccount
+cn: vagrant
+gidNumber: 500
+homeDirectory: /home/vagrant
+sn: vagrant
+uid: vagrant
+uidNumber: 500
+userPassword:: e21kNX1ZMkk1QU1pNzhoeHdiRVhjdDZMQWd3PT0=
+

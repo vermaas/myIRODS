@@ -1,0 +1,18 @@
+---
+
+  - name: Install required irods dev. build packages (RedHat).
+    become: true
+    yum: name={{ item }}
+    with_items:
+      - "@Development tools"
+      - openssl-devel
+    when: ansible_pkg_mgr == "yum"
+    tags: packages
+
+  - name: Install xmlrunner to create unittester results in xml report.
+    become: true
+    pip:
+      name: unittest-xml-reporting
+
+  - name: Add testing mounts looped back on files.
+    include: create-file-mounts.yml

@@ -1,0 +1,11 @@
+---
+  - name: Hosts run on Ubuntu
+    hosts: all
+    become: false
+    roles:
+      - common
+
+  - name: irods client
+    hosts: my_irods
+    roles:
+      - irods-client

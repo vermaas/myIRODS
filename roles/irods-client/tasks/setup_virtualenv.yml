@@ -1,0 +1,37 @@
+---
+
+  - name: Get user home directory
+    shell: echo $HOME
+    register: IRODS_CLIENT_UNIX_USER_HOME
+    become_user: "{{ IRODS_CLIENT_UNIX_USER }}"
+    changed_when: IRODS_CLIENT_UNIX_USER_HOME.rc != 0
+
+  - name: Download get-pip.py to install pip for python.
+    get_url:
+      url: https://bootstrap.pypa.io/get-pip.py
+      dest: "{{ IRODS_CLIENT_UNIX_USER_HOME.stdout }}"
+
+  - name: Install pip for Python.
+    become: true
+    command: python get-pip.py
+    args:
+      creates: /usr/local/bin/pip
+      chdir: "{{ IRODS_CLIENT_UNIX_USER_HOME.stdout }}"
+
+  - name: Install virtualenv.
+    become: true
+    pip:
+      name: virtualenv
+
+#  - name: Create virtualenv.
+#    pip:
+#       requirements: ""
+#       virtualenv: "{{ IRODS_CLIENT_INSTALL_ENV_PATH }}"
+
+
+  - name: Create the virtualenv.
+    become: true
+    command: virtualenv -p python2 {{ IRODS_CLIENT_INSTALL_ENV_PATH }}
+             creates={{ IRODS_CLIENT_INSTALL_ENV_PATH }}bin/activate
+    tags: virtualenv
+

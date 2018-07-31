@@ -1,0 +1,23 @@
+---
+# iRODS common settings
+
+# Used for automation of provisioning security related information
+# such as passwords and keys
+IRODS_INTERACTIVE_PROVISIONING: "true"
+IRODS_PROVISION_SECURITY_INFO: "false"
+
+# Required target environment
+IRODS_SUPPORTED_OS_VERSIONS: [ubuntu14, centos7]
+
+# Use quotes to specificaly register as string variable
+IRODS_VERSION: "4.2.1"
+# To be able to pin the iRODS version to an older release we use
+# the package layout at the time of the release. Instead
+# of the latest version which will always be "trusty", to avoid
+# the issue that apt resolves these dependencies always to the latest.
+# (Only way to avoid that is if within the .deb the version is
+#  explicitly added to filename).
+# See https://packages.irods.org/apt/dists/
+IRODS_PKG_RELEASE_WITH_TIME_STAMP: "trusty-20170608124902195100132"
+IRODS_DEB: irods-icommands
+

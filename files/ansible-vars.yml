@@ -1,0 +1,193 @@
+---
+# Configuration file for Vagrant ansible provisioning of iRODS
+# NB local paths (on the host running vagrant) are relative to the playbook directory!
+
+# IRODS_VERSION: 4.2.0
+# IRODS_VERSION: 4.1.10
+
+###############
+# Deployment parameters
+###############
+DEPLOY_SOURCE: "Nexus"
+DEPLOY_ENVIRONMENT: test
+
+# NOTE: If you want to deploy/test a specific version in DEV-environment (PyCharm) fill in the correct id, e.g.:
+# scripts\vagrant_provision_with_build_id.sh 0.0 20170703_094435
+# otherwise (with empty ARTIFACT_BUILD_ID) the latest artifact (trunk) from Nexus will be downloaded.
+# In SYSTEST environment the Jenkins job will set the 'ARTIFACT_BUILD_ID' which actually will overrule this one.
+# The 'Build ID' is defined as <version>-<timestamp> for trunk
+ARTIFACT_BUILD_ID: ""
+ARTIFACT_BRANCH_NAME: "trunk"
+
+###############
+# LDAP settings
+# bennojoy.openldap_server configuration
+# see https://galaxy.ansible.com/bennojoy/openldap_server/#readme
+###############
+openldap_server_domain_name: astron.nl
+openldap_server_rootpw: ChangeMe
+openldap_server_enable_ssl: false
+openldap_servercountry: NL                 # The ssl certificate parameters (only used when enabled)
+openldap_serverstate: Drenthe
+openldap_serverlocation: Dwingeloo
+openldap_serverorganization: ASTRON
+openldap_server_ldif: files/ldap-initial.ldif    # initializing the LDAP tree
+
+###############
+# Define the PostgreSQL role variables.
+###############
+POSTGRESQL_USERS:
+   - name: "{{ IRODS_ICAT_DB_USER }}"
+     password: "{{ IRODS_ICAT_DB_PASSWORD }}"
+     db: "{{ IRODS_ICAT_DB_NAME }}"
+     priv: ALL
+     state: present
+POSTGRESQL_DATABASES:
+  - name: "{{ IRODS_ICAT_DB_NAME }}"
+
+###############
+# Define the iRODS role variables.
+###############
+
+# iRODS LDAP configuration
+IRODS_LDAP_ENABLED: true
+IRODS_LDAP_HOST: ldap://alta-irods-ldap.astron.nl
+IRODS_LDAP_PORT: 389
+IRODS_LDAP_SSL: off
+IRODS_LDAP_VERIFY_SERVER_CERT: no
+IRODS_LDAP_LOGIN_ATTRIBUTE: uid
+IRODS_LDAP_DN_BASE: dc=astron,dc=nl
+IRODS_LDAP_VERSION: 3
+# NB When deploying a local LDAP instance using the 'openldap_server' role:
+# cn=Manager is hardcoded in bennojoy.openldap_server;
+# remainder should correspond to 'openldap_server_domain_name'
+IRODS_LDAP_ROOT_DN: cn=Manager,dc=astron,dc=nl
+IRODS_LDAP_ROOT_PASSWORD: "{{ openldap_server_rootpw }}"
+
+# iRODS ICAT Database settings
+IRODS_ICAT_DB_HOST: localhost
+IRODS_ICAT_DB_PORT: 5432
+IRODS_ICAT_DB_NAME: ICAT
+IRODS_ICAT_DB_USER: irods
+IRODS_ICAT_DB_PASSWORD: ChangeMe
+
+# iRODS IES (Zone host) settings
+IRODS_CATALOG_SERVICE_PROVIDER: "alta-irods-icat.astron.nl" #192.168.102.12
+IRODS_SERVICE_USER: irods
+IRODS_SERVICE_GROUP: irods
+IRODS_SERVICE_USER_HOME: /var/lib/irods
+IRODS_ODBC_OPTION: 2 # Selects the Unicode driver on Debian.
+IRODS_ZONE: tempZone
+IRODS_PORT: 1247
+IRODS_PORT_RANGE_BEGIN: 20000
+IRODS_PORT_RANGE_END: 20199
+IRODS_VAULT_DIR: "{{ IRODS_SERVICE_USER_HOME }}/iRODS/Vault"
+IRODS_CONTROL_PLANE_PORT: 1248
+IRODS_ADMIN_USER: rods
+IRODS_ADMIN_PASSWORD: ChangeMe
+IRODS_INIT_SCRIPT: files/irods-init.sh
+IRODS_SSL_ENABLED: true
+IRODS_SSL_SRC_PATH: files
+IRODS_SSL_DEST_PATH: /etc/irods/ssl
+IRODS_SSL_FORCE_KEY_FILES_OVERWRITE: yes # yes|no
+IRODS_SSL_KEY: server.key
+IRODS_SSL_CHAIN: chain.pem
+IRODS_SSL_DH_PARAMS: dhparams.pem
+IRODS_SSL_VERIFY_SETTING: "cert"
+
+# iRODS client settings
+IRODS_HOST: "alta-irods-icat.astron.nl"
+IRODS_CLIENT_ACCOUNT_CONFIGURATION: true
+IRODS_CLIENT_CONFIGURE_SELF_SIGNED_SSL: true
+# Already configured in IES settings
+# IRODS_ZONE: tempZone
+# IRODS_PORT: 1247
+# IRODS_SSL_CHAIN: files/chain.pem
+
+# The default iRODS Groups that will be created.
+IRODS_APERTIF_GROUP: apertif_main
+IRODS_ARTS_GROUP: arts_main
+
+IRODS_GROUPS:
+  - "{{ IRODS_APERTIF_GROUP }}"
+  - "{{ IRODS_ARTS_GROUP }}"
+
+# These default iRODS User Accounts that will be created.
+IRODS_USER_ACCOUNTS:
+  - irods_user: vagrant
+    #irods_password: << FROM LDAP >>
+  - irods_user: datawriter
+    irods_password: ChangeMe
+    irods_group: "{{ IRODS_APERTIF_GROUP }}"
+
+# The default iRODS Collections that will be created.
+IRODS_COLLECTIONS:
+  - name: "/{{ IRODS_ZONE }}/ingest"
+  - name: "/{{ IRODS_ZONE }}/ingest/{{ IRODS_APERTIF_GROUP }}"
+    write: "{{ IRODS_APERTIF_GROUP }}"
+    inherit: "true"
+  - name: "/{{ IRODS_ZONE }}/ingest/{{ IRODS_APERTIF_GROUP }}/visibilities_default"
+    write: "{{ IRODS_APERTIF_GROUP }}"
+    inherit: "true"
+  - name: "/{{ IRODS_ZONE }}/ingest/{{ IRODS_ARTS_GROUP }}"
+    write: "{{ IRODS_ARTS_GROUP }}"
+    inherit: "true"
+  - name: "/{{ IRODS_ZONE }}/ingest/{{ IRODS_ARTS_GROUP }}/timeseries_default"
+    write: "{{ IRODS_ARTS_GROUP }}"
+    inherit: "true"
+  - name: "/{{ IRODS_ZONE }}/archive"
+  - name: "/{{ IRODS_ZONE }}/archive/{{ IRODS_APERTIF_GROUP }}"
+  - name: "/{{ IRODS_ZONE }}/archive/{{ IRODS_APERTIF_GROUP }}/visibilities_default"
+  - name: "/{{ IRODS_ZONE }}/archive/{{ IRODS_ARTS_GROUP }}"
+  - name: "/{{ IRODS_ZONE }}/archive/{{ IRODS_ARTS_GROUP }}/timeseries_default"
+
+IRODS_PLUGINS: [ "irods-rule-engine-plugin-python" ]
+
+IRODS_RULE_ENGINES:
+  - instance_name: "irods_rule_engine_plugin-irods_rule_language-instance"
+    plugin_name: "irods_rule_engine_plugin-irods_rule_language"
+    plugin_specific_configuration:
+      re_data_variable_mapping_set: [ "core" ]
+      re_function_name_mapping_set: [ "core" ]
+      re_rulebase_set: [ "altaIngest", "alta-test", "core" ]
+      regexes_for_supported_peps: [ "ac[^ ]*", "msi[^ ]*", "[^ ]*pep_[^ ]*_(pre|post)" ]
+    shared_memory_instance: "irods_rule_language_rule_engine"
+  - instance_name: "irods_rule_engine_plugin-python-instance"
+    plugin_name: "irods_rule_engine_plugin-python"
+    plugin_specific_configuration:
+      re_rulebase_set: [ "alta-test-python" ]
+  - instance_name: "irods_rule_engine_plugin-cpp_default_policy-instance"
+    plugin_name: "irods_rule_engine_plugin-cpp_default_policy"
+    plugin_specific_configuration: {}
+
+#IRODS_RULE_ENGINES:
+#  - instance_name: "irods_rule_engine_plugin-irods_rule_language-instance"
+#    plugin_name: "irods_rule_engine_plugin-irods_rule_language"
+#    plugin_specific_configuration:
+#      re_data_variable_mapping_set: [ "core" ]
+#      re_function_name_mapping_set: [ "core" ]
+#      re_rulebase_set: [ "core" ]
+#      regexes_for_supported_peps: [ "ac[^ ]*", "msi[^ ]*", "[^ ]*pep_[^ ]*_(pre|post)" ]
+#    shared_memory_instance: "irods_rule_language_rule_engine"
+#  - instance_name: "irods_rule_engine_plugin-cpp_default_policy-instance"
+#    plugin_name: "irods_rule_engine_plugin-cpp_default_policy"
+#    plugin_specific_configuration: {}
+#  - instance_name: "irods_rule_engine_plugin-audit_amqp-instance"
+#    plugin_name: "irods_rule_engine_plugin-audit_amqp"
+#    plugin_specific_configuration:
+#      pep_regex_to_match: "audit_.*"
+#      amqp_topic: "queue://audit_messages"
+#      amqp_location: "localhost:5672"
+#      amqp_options: {}
+#  - instance_name: "irods_rule_engine_plugin-python-instance"
+#    plugin_name: "irods_rule_engine_plugin-python"
+#    plugin_specific_configuration: {}
+
+# ALTA Server Config Settings
+IRODS_ICAT_SCHEDULERS:
+  - name: "altaAllocateIngestScheduler"
+    interval: "30"
+  - name: "altaArchiveScheduler"
+    interval: "30"
+IRODS_ICAT_BROKER_ADDRESS: "alta-irods-icat.astron.nl"
+IRODS_BACKEND_HOST: "None"

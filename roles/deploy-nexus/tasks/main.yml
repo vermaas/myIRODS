@@ -1,0 +1,139 @@
+---
+  - debug:
+      msg: "Deploying from Nexus with the ARTIFACT_BUILD_ID: {{ARTIFACT_BUILD_ID}} and ARTIFACT_BRANCH_NAME: {{ ARTIFACT_BRANCH_NAME }}."
+
+  ##########################################
+  # 1) Determine build location from the trunk, with the provided BUILD_ID.
+  ##########################################
+  - name: Determine the {{ ARTIFACT }} artifact from the Nexus repository (trunk) based on BUILD_ID {{ARTIFACT_BUILD_ID}}
+    set_fact:
+      artifact_to_download="{{ ARTIFACT_BASE_URL_TRUNK }}/{{ ARTIFACT }}/{{ ARTIFACT }}-{{ ARTIFACT_BUILD_ID }}.{{ ARTIFACT_FILE_TYPE }}"
+    when: not ARTIFACT_BUILD_ID == "" and ARTIFACT_BRANCH_NAME == "trunk"
+
+  ##########################################
+  # 2) Determine build location, when deploying from a branch.
+  ##########################################
+  - name: Set the name of the branch, stripped from {{ ARTIFACT_BRANCH_NAME }}
+    set_fact:
+      BRANCH_NAME="{{ ARTIFACT_BRANCH_NAME | basename }}"
+    when: '"branches/" in ARTIFACT_BRANCH_NAME'
+
+  - name: Determine the {{ ARTIFACT }} artifact from the Nexus repository (branches) based on BUILD_ID {{ARTIFACT_BUILD_ID}} and {{ BRANCH_NAME }}
+    set_fact:
+      artifact_to_download="{{ ARTIFACT_BASE_URL_BRANCH }}/{{BRANCH_NAME}}/{{ ARTIFACT }}/{{ ARTIFACT }}-{{ ARTIFACT_BUILD_ID }}.{{ ARTIFACT_FILE_TYPE }}"
+    when: not ARTIFACT_BUILD_ID == "" and "branches/" in ARTIFACT_BRANCH_NAME
+
+  ##########################################
+  # 3) Determine build location when deploying from a (release) tag.
+  ##########################################
+  - name: Set the name of a tag, stripped from {{ ARTIFACT_BRANCH_NAME }}
+    set_fact:
+      TAG_NAME="{{ ARTIFACT_BRANCH_NAME | basename }}"
+    when: '"tags/" in ARTIFACT_BRANCH_NAME'
+
+  - name: Determine the {{ ARTIFACT }} artifact from the Nexus repository (tags) based on BUILD_ID {{ARTIFACT_BUILD_ID}}
+    set_fact:
+      artifact_to_download="{{ ARTIFACT_BASE_URL_TAGS }}/{{ TAG_NAME }}/{{ ARTIFACT }}-{{ ARTIFACT_BUILD_ID }}.{{ ARTIFACT_FILE_TYPE }}"
+    when: not ARTIFACT_BUILD_ID == "" and "tags/" in ARTIFACT_BRANCH_NAME
+
+  ##########################################
+  # 4) In case of an empty BUILD_ID, retrieve the lastest from the trunk or the branch.
+  #    or in case of a BUILD_ID that does not resolve to an available artifact, fall back to the latest.
+  ##########################################
+  # First define default.
+  - set_fact:
+      do_retrieve_latest=False
+
+  - name: Test whether the branch or trunk artifact url can be downloaded.
+    uri:
+      url: "{{ artifact_to_download }}"
+      timeout: 30
+      method: HEAD
+    register: artifact_available
+    no_log: True
+    ignore_errors: True
+    when: not ARTIFACT_BUILD_ID == "" and ('"branches/" in ARTIFACT_BRANCH_NAME' or ARTIFACT_BRANCH_NAME == "trunk")
+    failed_when: False or (artifact_available.status != 200 and "tags/" in ARTIFACT_BRANCH_NAME)
+
+  - set_fact:
+      do_retrieve_latest=True
+    when: ARTIFACT_BUILD_ID == "" or (artifact_available.status is defined and artifact_available.status != 200)
+
+  - debug:
+      msg: "WARNING the provided ARTIFACT_BUILD_ID: {{ ARTIFACT_BUILD_ID }} does not resolve to a deployable artifact. Try to retrieve the latest."
+    when: not ARTIFACT_BUILD_ID == "" and do_retrieve_latest
+
+  - name: Determine the latest trunk {{ ARTIFACT }} artifact from the Nexus repository (empty BUILD_ID).
+    script: determine_latest_trunk_artifact.sh {{ ARTIFACT }} {{ ARTIFACT_FILE_TYPE}} {{ ARTIFACT_BRANCH_NAME }}
+    when: do_retrieve_latest
+
+  - name: Find the latest found trunk artifact as file to download (empty BUILD_ID given).
+    shell: "cat /tmp/{{ ARTIFACT }}_latest_filename"
+    register: latest_file
+    when: do_retrieve_latest
+
+  - name: Set the latest found trunk artifact as file to download (empty BUILD_ID given).
+    set_fact:
+       artifact_to_download: "{{ latest_file.stdout }}"
+    when: do_retrieve_latest
+
+  ##########################################
+  # Finally, download the ARTIFACT.
+  ##########################################
+  - debug:
+      msg: "The artifact that will be downloaded: {{artifact_to_download}}."
+
+  # force is required in case the tmp file already exist, otherwise it will skip the download
+  - name: Download {{ ARTIFACT }} artifact from the Nexus repository.
+    get_url:
+      url: "{{ artifact_to_download }}"
+      dest: "{{ ARTIFACT_DOWNLOAD_TMP }}"
+      force: yes
+      timeout: 30
+    ignore_errors: True
+    register: get_url_result
+
+  - name: Retry to download {{ ARTIFACT }} artifact from the Nexus repository.
+    get_url:
+      url: "{{ artifact_to_download }}"
+      dest: "{{ ARTIFACT_DOWNLOAD_TMP }}"
+      force: yes
+      timeout: 90
+    when: get_url_result.failed is defined and get_url_result.failed
+
+  ##########################################
+  # Perform an optional automatic POST deploy actions.
+  ##########################################
+  - name: Unarchive the latest {{ ARTIFACT }} artifact to the folder {{ DEPLOY_DESTINATION }}.
+    become: true
+    unarchive:
+      src:  "{{ ARTIFACT_DOWNLOAD_TMP }}"
+      dest: "{{ DEPLOY_DESTINATION }}"
+      remote_src: True
+    when: ARTIFACT_FILE_TYPE == "ztar" or ARTIFACT_FILE_TYPE == "tgz" and DEPLOY_NEXUS_ACTION == "unarchive"
+
+  - name: Pip install the latest {{ ARTIFACT }} artifacts (within {{ DEPLOY_DESTINATION }}).
+    become: true
+    pip:
+      name:  "{{ ARTIFACT_DOWNLOAD_TMP }}"
+      virtualenv: "{{ DEPLOY_DESTINATION | default(omit) }}"
+      executable: "{{ DEPLOY_NEXUS_ACTION }}"
+    when: DEPLOY_NEXUS_ACTION | match("^pip")
+
+  - name: Apt install the latest {{ ARTIFACT }} .deb artifact.
+    become: true
+    apt: deb="{{ ARTIFACT_DOWNLOAD_TMP }}"
+    when: DEPLOY_NEXUS_ACTION == "apt" or ARTIFACT_FILE_TYPE == "deb" and ansible_os_family == 'Debian' and not(DEPLOY_NEXUS_ACTION == "none")
+
+  - name: Yum install the latest {{ ARTIFACT }} .rpm artifact.
+    become: true
+    yum: name="{{ ARTIFACT_DOWNLOAD_TMP }}"
+    when: DEPLOY_NEXUS_ACTION == "yum" or ARTIFACT_FILE_TYPE == "rpm" and ansible_os_family == 'Redhat' and not(DEPLOY_NEXUS_ACTION == "none")
+
+  - name: Copy the latest {{ ARTIFACT }} artifact to the folder {{ DEPLOY_DESTINATION }}.
+    become: true
+    copy:
+      src:  "{{ ARTIFACT_DOWNLOAD_TMP }}"
+      dest: "{{ DEPLOY_DESTINATION }}"
+      remote_src: True
+    when: ARTIFACT_FILE_TYPE == "simg"

@@ -1,0 +1,16 @@
+---
+  - debug: msg="Host OS distribution is {{ ansible_distribution }} {{ ansible_distribution_major_version }}"
+
+  - name: Verify target OS
+    assert:
+      that:
+        - IRODS_CURRENT_INSTALL_OS in IRODS_SUPPORTED_OS_VERSIONS
+      msg: msg="Unsupported host OS distribution"
+
+  - include: prepare.yml
+
+  - include: irods-installation-url.yml
+    when: IRODS_PACKAGE_AVAILABLE is undefined
+
+  - include: irods-installation-package.yml
+    when: IRODS_PACKAGE_AVAILABLE is defined

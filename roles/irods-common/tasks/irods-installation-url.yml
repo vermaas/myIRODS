@@ -1,0 +1,48 @@
+---
+
+  - name: Check if irods package is installed (Debian).
+    when: ansible_pkg_mgr == "apt"
+    command: dpkg-query -W "{{ IRODS_DEB }}"
+    register: IRODS_DEB_CHECK
+    failed_when: IRODS_DEB_CHECK.rc > 1
+    changed_when: IRODS_DEB_CHECK.rc == 1
+
+  - name: Check if irods package is installed (Redhat).
+    when: ansible_pkg_mgr == "yum"
+    command: yum list "{{ IRODS_DEB }}"
+    register: IRODS_RPM_CHECK
+    failed_when: IRODS_RPM_CHECK.rc > 1
+    changed_when: IRODS_RPM_CHECK.rc == 1
+
+  - name: Report installed packages (Debian).
+    debug: msg="Found installed packages {{ IRODS_DEB_CHECK.stdout }}"
+    when: (IRODS_DEB_CHECK is defined) and (IRODS_DEB_CHECK.rc == 0)
+
+  - name: Report installed packages (Redhat).
+    debug: msg="Found installed packages {{ IRODS_RPM_CHECK.stdout }}"
+    when: (IRODS_RPM_CHECK is defined) and (IRODS_RPM_CHECK.rc == 0)
+
+  - name: Set irods version fact.
+    set_fact:
+      IRODS_FETCH_VERSION: "{{ IRODS_VERSION }}"
+      
+  - name: Set irods db plugin version fact.
+    set_fact:
+      IRODS_FETCH_VERSION: "{{ IRODS_DB_PLUGIN_VERSION[ IRODS_VERSION ] }}"
+    when: "{{ IRODS_DEB.find('database-plugin') != -1 }}"
+
+  - name: Install irods package (Debian).
+    apt:
+      deb: "{{ item }}"
+    with_items:
+      - "{{ IRODS_DEB_URL }}.deb"
+    become: true
+    when: (IRODS_DEB_CHECK is defined) and (IRODS_DEB_CHECK.rc == 1) and (ansible_pkg_mgr == "apt")
+
+  - name: Install irods package (Redhat).
+    yum:
+      name: "{{ item }}"
+    with_items:
+      - "{{ IRODS_DEB_URL }}.rpm"
+    become: true
+    when: (IRODS_RPM_CHECK is defined) and (IRODS_RPM_CHECK.rc == 1) and (ansible_pkg_mgr == "yum")

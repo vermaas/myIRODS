@@ -1,0 +1,6 @@
+---
+
+COMMON_PACKAGE_UPGRADE: false
+
+COMMON_APT_ADD_CACHE: true
+COMMON_APT_CACHE_URL: "alta2.astron.nl"

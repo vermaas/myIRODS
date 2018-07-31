@@ -1,0 +1,6 @@
+---
+allow_duplicates: yes
+dependencies:
+ - { role: irods-common, IRODS_DEB: "{{ IRODS_ICAT_DEB }}" }
+ - { role: irods-common, IRODS_DEB: "{{ IRODS_DEV_DEB }}" }
+ - { role: irods-common, IRODS_DEB: "{{ IRODS_EXTERNAL_DEB }}" }

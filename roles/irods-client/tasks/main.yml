@@ -1,0 +1,49 @@
+---
+
+  - include: client-configuration.yml
+    become: true
+    when: IRODS_CLIENT_ACCOUNT_CONFIGURATION
+
+  # Install pre-requisite package dependencies.
+  - name: Install python-dev package.
+    become: true
+    apt: name=python-dev
+
+  - name: Create virtualenv if needed.
+    include: setup_virtualenv.yml
+
+  - name: Create alta-irods-rules directory.
+    become: true
+    file:
+      path: "{{ IRODS_RULES_LOCATION }}"
+      state: directory
+      owner: "{{ IRODS_CLIENT_UNIX_USER }}"
+      group: "{{ IRODS_CLIENT_UNIX_GROUP }}"
+      mode: 0775
+
+  - name: Deploy Nexus Packages.
+    include_role:
+      name: deploy-nexus
+    vars:
+      ARTIFACT: "{{ item.name }}"
+      ARTIFACT_FILE_TYPE: "{{ item.filetype | default(omit) }}"
+      DEPLOY_DESTINATION: "{{ item.destination | default(omit) }}"
+    with_items: "{{ IRODS_CLIENT_NEXUS_PACKAGES }}"
+
+  - name: Install the alta core utils lib under virtualenv and within pip (bound to python2).
+    become: true
+    pip:
+      name: "file:///tmp/{{ IRODS_CLIENT_ARTIFACT }}_downloaded.tar.gz"
+      virtualenv: "{{ IRODS_CLIENT_INSTALL_ENV_PATH }}"
+
+  - name: Install the alta ingest under virtualenv and within pip (bound to python2).
+    become: true
+    pip:
+      name: "file:///tmp/{{ IRODS_CLIENT_INGEST_ARTIFACT }}_downloaded.tar.gz"
+      virtualenv: "{{ IRODS_CLIENT_INSTALL_ENV_PATH }}"
+
+  - name: Install the alta generate sip under virtualev within pip (bound to python2).
+    become: true
+    pip:
+      name: "file:///tmp/{{ CLIENT_GENERATE_SIP_ARTIFACT }}_downloaded.tar.gz"
+      virtualenv: "{{ IRODS_CLIENT_INSTALL_ENV_PATH }}"

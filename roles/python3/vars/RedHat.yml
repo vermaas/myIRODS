@@ -1,0 +1,7 @@
+---
+
+__PYTHON3_PACKAGES:
+  - python35u
+  - python35u-pip
+  - python35u-devel
+__PYTHON3_PIP_EXE: pip3.5

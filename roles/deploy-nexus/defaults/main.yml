@@ -1,0 +1,22 @@
+---
+# These parameters should be set by role who include deploy-nexus
+ARTIFACT: "this should be the artifact name"
+ARTIFACT_FILE_TYPE: "ztar"
+DEPLOY_DESTINATION: "/tmp"
+ARTIFACT_BUILD_ID: ""
+ARTIFACT_BRANCH_NAME: ""
+DEPLOY_NEXUS_ACTION: "unarchive"
+#  "none"           : does nothing with the downloaded file.
+#  "unarchive"      : by default unarchives if the files ends with .ztar or .tgz
+#  "pip2/3"         : install with pip2/3
+#  "apt"            : installs debian files with apt (defaut action ARTIFACT_FILE_TYPE == deb).
+#  "yum"            : installs rpm files with yum (defaut action ARTIFACT_FILE_TYPE == yum).
+
+# Extracted from above
+ARTIFACT_DOWNLOAD_TMP: "/tmp/{{ ARTIFACT }}_downloaded.{{ ARTIFACT_FILE_TYPE }}"
+
+ARTIFACT_BASE_URL_TAGS: "https://support.astron.nl/nexus/content/repositories/releases/nl/astron/alta"
+ARTIFACT_BASE_URL_BRANCH: "https://support.astron.nl/nexus/content/repositories/branches/nl/astron/alta"
+ARTIFACT_BASE_URL_TRUNK: "https://support.astron.nl/nexus/content/repositories/snapshots/nl/astron/alta"
+
+JENKINS_BUILD_ID_FILE: "/tmp/jenkins_build_id"

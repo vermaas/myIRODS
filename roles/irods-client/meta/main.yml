@@ -1,0 +1,5 @@
+---
+allow_duplicates: yes
+dependencies:
+ - { role: irods-common, IRODS_DEB: "{{ IRODS_ICOMMANDS_DEB }}" }
+

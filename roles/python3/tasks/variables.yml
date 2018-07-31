@@ -1,0 +1,19 @@
+---
+
+  - name: Include OS-specific variables (Debian).
+    include_vars: "{{ ansible_os_family }}.yml"
+    when: ansible_os_family == 'Debian'
+
+  - name: Include OS-specific variables (RedHat).
+    include_vars: "{{ ansible_os_family }}.yml"
+    when: ansible_os_family == 'RedHat'
+
+  - name: Define python 3 packages.
+    set_fact:
+      PYTHON3_PACKAGES: "{{ __PYTHON3_PACKAGES | list }}"
+    when: PYTHON3_PACKAGES is not defined
+
+  - name: Define pip executable.
+    set_fact:
+      PYTHON3_PIP_EXE: "{{ __PYTHON3_PIP_EXE }}"
+    when: PYTHON3_PIP_EXE is not defined
