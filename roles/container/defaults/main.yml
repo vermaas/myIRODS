@@ -1,0 +1,7 @@
+---
+# In /home/vagrant
+CONTAINER_BUILD_PATH: "build_alta_container"
+CONTAINER_NAME: "alta-metadata-tools"
+CONTAINER_FULL_RECIPE_NAME:  "{{ CONTAINER_BUILD_PATH }}/{{ CONTAINER_NAME }}"
+CONTAINER_FULL_IMAGE_NAME:  "{{ CONTAINER_BUILD_PATH }}/{{ CONTAINER_NAME }}.simg"
+

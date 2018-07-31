@@ -9,3 +9,8 @@
     hosts: my_irods
     roles:
       - irods-client
+
+  - name: install singularity container
+    hosts: my_irods
+    roles:
+      - container

@@ -1,0 +1,27 @@
+  # https://singularity.lbl.gov/install-linux
+  - name: Adding the Singularity repository
+    raw: sudo wget -O- http://neuro.debian.net/lists/xenial.us-ca.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
+
+  - name:  Add the Singularity repository signing keys to be able to verify downloaded packages
+    raw: sudo apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
+    ignore_errors: True
+    register: gpg_result
+
+  # Retrieving the key sometimes fails so lets retry another keyserver
+  - name: Retry to add the Singularity repository signing keys.
+    raw: sudo apt-key adv --recv-keys --keyserver hkp://p80.pool.sks-keyservers.net:80 0xA5D32F012649A5A9
+    ignore_errors: True
+    register: gpg_result2
+    when: gpg_result.failed is defined and gpg_result.failed
+
+  # Retrieving the key sometimes fails so lets retry another keyserver
+  - name: Second retry to add the Singularity repository signing keys.
+    raw: sudo apt-key adv --recv-keys --keyserver hkp://ha.pool.sks-keyservers.net:80 0xA5D32F012649A5A9
+    when: gpg_result2.failed is defined and gpg_result2.failed
+
+  - name: Update list of available packages
+    raw: sudo apt-get update
+
+  - name: Install the Singularity Container
+    raw: sudo apt-get install -y singularity-container
+

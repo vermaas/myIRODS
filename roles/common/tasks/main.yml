@@ -24,6 +24,7 @@
       - openssl
       - screen
       - mc
+      - x11-apps
 
   - name: Deploy .screenrc to the home.
     copy:

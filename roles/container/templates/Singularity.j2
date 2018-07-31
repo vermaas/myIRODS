@@ -1,0 +1,10 @@
+# This 'Singularity' recipe contains packages for alta metadata extraction
+Bootstrap: docker
+From: kernsuite/base
+%post
+    apt-add-repository multiverse
+    apt-add-repository restricted
+    apt-get update
+    apt-get dist-upgrade -y
+    apt-get install -y python-casacore psrchive
+    apt-get clean

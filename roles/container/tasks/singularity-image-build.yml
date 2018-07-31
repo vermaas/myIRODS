@@ -1,0 +1,22 @@
+
+  # Create Singularity build folder
+  - name: Create Singularity build folder
+    file: path="{{ CONTAINER_BUILD_PATH }}" state=directory owner=vagrant group=vagrant mode=0775
+
+  - name: Create Singularity recipe file from template
+    template:
+      src: "templates/Singularity.j2"
+      dest: "{{ CONTAINER_FULL_RECIPE_NAME }}"
+
+  - name: Install additional library for extracting/building 'squashfs' container
+    raw: sudo apt-get install squashfs-tools
+
+  - name: Determine if the Singularity container already exists.
+    stat:
+      path: "{{ CONTAINER_FULL_IMAGE_NAME }}"
+    register: image
+
+  - name: Build a Singularity container from recipe if not exist
+    raw: sudo singularity build {{ CONTAINER_FULL_IMAGE_NAME }} {{ CONTAINER_FULL_RECIPE_NAME }}
+    when: not image.stat.exists
+

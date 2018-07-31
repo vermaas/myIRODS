@@ -1,0 +1,9 @@
+---
+  - include: singularity-installation.yml
+    become: true
+
+  # Only build the image in development environment
+  - include: singularity-image-build.yml
+    when: DEPLOY_ENVIRONMENT == "dev"
+
+
